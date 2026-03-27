@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tumby Bay TB81/181 Roster</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .week-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .week-selector button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .week-selector button:hover {
+            background: #764ba2;
+        }
+
+        .week-display {
+            font-weight: 600;
+            color: #333;
+            min-width: 150px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #218838;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .roster-wrapper {
+            overflow-x: auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        td:first-child {
+            text-align: left;
+            font-weight: 500;
+            background: #f8f9fa;
+            position: sticky;
+            left: 0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .restriction-code {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .code-nc {
+            background: #dc3545;
+            color: white;
+        }
+
+        .code-d {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .code-n {
+            background: #28a745;
+            color: white;
+        }
+
+        .code-a {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .staff-present {
+            background: #d4edda;
+            color: #155724;
+            font-weight: 500;
+        }
+
+        .legend {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .legend h3 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: white;
+        }
+
+        .legend-text {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .week-selector {
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 11px;
+            }
+
+            td, th {
+                padding: 8px;
+            }
+
+            .legend-items {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚑 Tumby Bay TB81/181 Roster</h1>
+            <p>South Australian Ambulance Service</p>
+        </div>
+
+        <div class="controls">
+            <div class="week-selector">
+                <button onclick="previousWeek()">← Previous</button>
+                <div class="week-display" id="weekDisplay">Week of: Loading...</div>
+                <button onclick="nextWeek()">Next →</button>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="openBookingModal()">📅 Book Shift</button>
+                <button class="btn" onclick="exportPDF()">📄 Export PDF</button>
+                <button class="btn" onclick="emailRoster()">📧 Email Roster</button>
+            </div>
+        </div>
+
+        <div id="message"></div>
+
+        <div class="roster-wrapper">
+            <table id="rosterTable">
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th>Mon</th>
+                        <th>Tue</th>
+                        <th>Wed</th>
+                        <th>Thu</th>
+                        <th>Fri</th>
+                        <th>Sat</th>
+                        <th>Sun</th>
+                    </tr>
+                </thead>
+                <tbody id="rosterBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px;">Loading roster data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legend">
+            <h3>Restriction Codes & Legend</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-box code-nc">NC</div>
+                    <div class="legend-text"><strong>NC:</strong> No staff available</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box code-d">D</div>
+                    <div class="legend-text"><strong>D:</strong> 1 AO/AR staff member</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box code-n">N</div>
+                    <div class="legend-text"><strong>N:</strong> 2+ AO/AR staff members</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box code-a">A</div>
+                    <div class="legend-text"><strong>A:</strong> Special restriction</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <div class="modal-header">📅 Book a Shift</div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="staffName">Your Name:</label>
+                    <input type="text" id="staffName" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="shiftDate">Date:</label>
+                    <input type="date" id="shiftDate">
+                </div>
+                <div class="form-group">
+                    <label for="startTime">Start Time:</label>
+                    <input type="time" id="startTime">
+                </div>
+                <div class="form-group">
+                    <label for="endTime">End Time:</label>
+                    <input type="time" id="endTime">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
+                <button class="btn" onclick="submitBooking()">Book Shift</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+        const API_KEY = 'YOUR_GOOGLE_API_KEY_HERE';
+        let currentWeekStart = getNextWednesday();
+
+        // Sample staff data (replace with API call to Google Sheets)
+        const staffMembers = [
+            'Margaret Foster (AO)',
+            'Pauline Britza (AO)',
+            'Anike Helder (AO)',
+            'Karl Fredrickson (AO)',
+            'Paul Rice (AR)',
+            'Amanda Haynes (AR)'
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRoster();
+            setDateInputLimits();
+        });
+
+        function getNextWednesday() {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const daysUntilWednesday = (3 - dayOfWeek + 7) % 7 || 7;
+            const nextWednesday = new Date(today);
+            nextWednesday.setDate(today.getDate() + daysUntilWednesday);
+            return getWeekStart(nextWednesday);
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-AU', options);
+        }
+
+        function previousWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            loadRoster();
+        }
+
+        function nextWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            loadRoster();
+        }
+
+        function loadRoster() {
+            const weekEnd = new Date(currentWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            document.getElementById('weekDisplay').textContent = 
+                `Week of: ${formatDate(currentWeekStart)} to ${formatDate(weekEnd)}`;
+
+            // TODO: Replace with actual Google Sheets API call
+            generateSampleRoster();
+        }
+
+        function generateSampleRoster() {
+            const tbody = document.getElementById('rosterBody');
+            tbody.innerHTML = '';
+
+            const codes
