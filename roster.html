@@ -921,7 +921,7 @@
 
                 <div class="user-section">
                     <span class="storage-badge">
-                        Local prototype
+                        Google Sheets
                     </span>
 
                     <label for="nameInput">
@@ -945,8 +945,7 @@
             </h2>
 
             <div class="notice">
-                This standalone prototype saves bookings in this
-                browser. The roster CSV uses one name column and one
+                This prototype saves bookings to Google Sheets. The roster CSV uses one name column and one
                 blank restriction column per day, with three crew rows
                 for every hour from 08:00 to 18:00.
             </div>
@@ -1212,41 +1211,29 @@
         const MAX_SHIFT_HOURS = 24;
         const DAYS_TO_SHOW = 7;
 
-        /*
-         * These are the hours included in the downloaded
-         * roster grid, matching an 8:00 am to 6:00 pm sheet.
-         *
-         * 08:00 represents 08:00–09:00.
-         * 17:00 represents 17:00–18:00.
-         */
         const ROSTER_START_HOUR = 8;
         const ROSTER_END_HOUR = 18;
 
-       const EVENTS_STORAGE_KEY =
-    "crew-roster-events-v3";
+        const USER_STORAGE_KEY =
+            "crew-roster-user-v3";
 
-const USER_STORAGE_KEY =
-    "crew-roster-user-v3";
+        /*
+         * PASTE YOUR APPS SCRIPT DEPLOYMENT URL HERE
+         */
+        const APPS_SCRIPT_URL =
+            "https://script.google.com/macros/s/AKfycbz4CLRIHXsW4G2zzE4bUvH_b658g_4u9NU7sN8QmyGMQgXSmabjbzrLXPNkHA4lACQ/exec";
 
-/*
- * PASTE YOUR APPS SCRIPT DEPLOYMENT URL HERE
- */
-const APPS_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbz4CLRIHXsW4G2zzE4bUvH_b658g_4u9NU7sN8QmyGMQgXSmabjbzrLXPNkHA4lACQ/exec";
+        /*
+         * Set this to your team name.
+         * Options: "Cummins", "North", "South", "East", "West"
+         */
+        const TEAM_NAME = "Cummins";
 
-/*
- * Set this to your team name.
- * Options: "North", "South", "East", "West"
- */
-const TEAM_NAME = "Cummins";
+        let currentUser =
+            localStorage.getItem(USER_STORAGE_KEY) || "";
 
-let currentUser =
-    localStorage.getItem(USER_STORAGE_KEY) || "";
-
-let events = [];
-let isLoadingFromSheet = false;
-
-initialise();
+        let events = [];
+        let isLoadingFromSheet = false;
         let toastTimer;
 
         const nameInput =
@@ -1314,9 +1301,149 @@ initialise();
             populateStartTimes();
             registerEventListeners();
 
-            renderCalendar();
-            renderBookingTable();
-            updateBookingSummary();
+            /*
+             * Load bookings from Google Sheet
+             * instead of localStorage.
+             */
+            loadBookingsFromSheet();
+        }
+
+        function loadBookingsFromSheet() {
+            isLoadingFromSheet = true;
+
+            fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                payload: JSON.stringify({
+                    action: "getBookings",
+                    team: TEAM_NAME
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    events = data.bookings.map(booking => {
+                        return {
+                            id: booking.id,
+                            user: booking.user,
+                            start: booking.start,
+                            end: booking.end,
+                            createdAt: booking.createdAt
+                        };
+                    });
+
+                    renderCalendar();
+                    renderBookingTable();
+                    updateBookingSummary();
+                } else {
+                    showToast(
+                        "Error loading bookings: " +
+                        data.error
+                    );
+                }
+
+                isLoadingFromSheet = false;
+            })
+            .catch(error => {
+                console.error(
+                    "Failed to load bookings:",
+                    error
+                );
+
+                showToast(
+                    "Unable to connect to Google Sheet."
+                );
+
+                isLoadingFromSheet = false;
+            });
+        }
+
+        function saveBookingToSheet(newEvent) {
+            fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                payload: JSON.stringify({
+                    action: "addBooking",
+                    id: newEvent.id,
+                    team: TEAM_NAME,
+                    user: newEvent.user,
+                    start: newEvent.start,
+                    end: newEvent.end
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    /*
+                     * Reload from sheet to ensure
+                     * we have the latest data.
+                     */
+                    loadBookingsFromSheet();
+
+                    showToast("Shift booked.");
+                } else {
+                    showToast(
+                        "Error: " + data.error
+                    );
+
+                    /*
+                     * Remove the booking we added locally
+                     * since it failed on the server.
+                     */
+                    events = events.filter(
+                        event => event.id !== newEvent.id
+                    );
+
+                    renderCalendar();
+                    updateBookingSummary();
+                }
+            })
+            .catch(error => {
+                console.error(
+                    "Failed to save booking:",
+                    error
+                );
+
+                showToast(
+                    "Unable to save to Google Sheet."
+                );
+
+                events = events.filter(
+                    event => event.id !== newEvent.id
+                );
+
+                renderCalendar();
+                updateBookingSummary();
+            });
+        }
+
+        function cancelShiftOnSheet(eventId) {
+            fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                payload: JSON.stringify({
+                    action: "cancelBooking",
+                    bookingId: eventId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadBookingsFromSheet();
+                    showToast("Shift cancelled.");
+                } else {
+                    showToast(
+                        "Error: " + data.error
+                    );
+                }
+            })
+            .catch(error => {
+                console.error(
+                    "Failed to cancel booking:",
+                    error
+                );
+
+                showToast(
+                    "Unable to cancel on Google Sheet."
+                );
+            });
         }
 
         function registerEventListeners() {
@@ -1793,8 +1920,15 @@ initialise();
                     new Date().toISOString()
             };
 
+            /*
+             * Add to local array first for immediate UI update.
+             */
             events.push(newEvent);
-            saveEvents();
+
+            /*
+             * Save to Google Sheet.
+             */
+            saveBookingToSheet(newEvent);
 
             renderCalendar();
             renderBookingTable();
@@ -1812,8 +1946,6 @@ initialise();
                     target.classList.add("open");
                 }
             });
-
-            showToast("Shift booked.");
 
             startTimeSelect.value = "";
             populateFinishTimes();
@@ -1845,18 +1977,23 @@ initialise();
                 return;
             }
 
+            /*
+             * Remove from local array first.
+             */
             events =
                 events.filter(item => {
                     return item.id !== eventId;
                 });
 
-            saveEvents();
+            /*
+             * Cancel on Google Sheet.
+             */
+            cancelShiftOnSheet(eventId);
+
             renderCalendar();
             renderBookingTable();
             renderMyBookings();
             updateBookingSummary();
-
-            showToast("Shift cancelled.");
         }
 
         function getBookingsForHour(hourStart) {
@@ -2477,20 +2614,6 @@ initialise();
             });
         }
 
-        /*
-         * WEEKLY ROSTER CSV
-         *
-         * Layout:
-         *
-         * Time | Thursday name | Restriction |
-         *        Friday name   | Restriction | ...
-         *
-         * Each hour uses three rows:
-         *
-         * 08:00 | Name 1 | blank |
-         *       | Name 2 | blank |
-         *       | Name 3 | blank |
-         */
         function exportRosterCSV() {
             const rosterStart =
                 startOfDay(new Date());
@@ -2611,10 +2734,6 @@ initialise();
                                 : ""
                         );
 
-                        /*
-                         * Leave the restriction cell blank
-                         * for manual completion.
-                         */
                         row.push("");
                     });
 
@@ -2639,11 +2758,6 @@ initialise();
             );
         }
 
-        /*
-         * Give each continuous booking one of three vertical
-         * positions. The position remains consistent throughout
-         * the continuous shift.
-         */
         function assignRosterLanes(
             relevantEvents
         ) {
@@ -2957,35 +3071,6 @@ initialise();
                 .toISOString()
                 .replace(/[-:]/g, "")
                 .replace(/\.\d{3}/, "");
-        }
-
-        function loadEvents() {
-            try {
-                const stored =
-                    JSON.parse(
-                        localStorage.getItem(
-                            EVENTS_STORAGE_KEY
-                        )
-                    );
-
-                return Array.isArray(stored)
-                    ? stored
-                    : [];
-            } catch (error) {
-                console.warn(
-                    "Unable to read saved events:",
-                    error
-                );
-
-                return [];
-            }
-        }
-
-        function saveEvents() {
-            localStorage.setItem(
-                EVENTS_STORAGE_KEY,
-                JSON.stringify(events)
-            );
         }
 
         function createId() {
