@@ -1308,112 +1308,73 @@
             loadBookingsFromSheet();
         }
 
-        function loadBookingsFromSheet() {
-            isLoadingFromSheet = true;
+       function loadBookingsFromSheet() {
+    isLoadingFromSheet = true;
 
-            fetch(APPS_SCRIPT_URL, {
-                method: "POST",
-                payload: JSON.stringify({
-                    action: "getBookings",
-                    team: TEAM_NAME
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    events = data.bookings.map(booking => {
-                        return {
-                            id: booking.id,
-                            user: booking.user,
-                            start: booking.start,
-                            end: booking.end,
-                            createdAt: booking.createdAt
-                        };
-                    });
+    console.log("Loading bookings from:", APPS_SCRIPT_URL);
+    console.log("Team name:", TEAM_NAME);
 
-                    renderCalendar();
-                    renderBookingTable();
-                    updateBookingSummary();
-                } else {
-                    showToast(
-                        "Error loading bookings: " +
-                        data.error
-                    );
-                }
+    fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        payload: JSON.stringify({
+            action: "getBookings",
+            team: TEAM_NAME
+        })
+    })
+    .then(response => {
+        console.log("Response status:", response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Response data:", data);
 
-                isLoadingFromSheet = false;
-            })
-            .catch(error => {
-                console.error(
-                    "Failed to load bookings:",
-                    error
-                );
-
-                showToast(
-                    "Unable to connect to Google Sheet."
-                );
-
-                isLoadingFromSheet = false;
+        if (data && data.success) {
+            events = (data.bookings || []).map(booking => {
+                return {
+                    id: booking.id || "",
+                    user: booking.user || "",
+                    start: booking.start || "",
+                    end: booking.end || "",
+                    createdAt: booking.createdAt || ""
+                };
             });
+
+            console.log("Loaded events:", events);
+
+            renderCalendar();
+            renderBookingTable();
+            updateBookingSummary();
+        } else {
+            console.error("API error:", data);
+            showToast(
+                "Error loading bookings: " +
+                (data?.error || "Unknown error")
+            );
         }
 
-        function saveBookingToSheet(newEvent) {
-            fetch(APPS_SCRIPT_URL, {
-                method: "POST",
-                payload: JSON.stringify({
-                    action: "addBooking",
-                    id: newEvent.id,
-                    team: TEAM_NAME,
-                    user: newEvent.user,
-                    start: newEvent.start,
-                    end: newEvent.end
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    /*
-                     * Reload from sheet to ensure
-                     * we have the latest data.
-                     */
-                    loadBookingsFromSheet();
+        isLoadingFromSheet = false;
+    })
+    .catch(error => {
+        console.error(
+            "Failed to load bookings:",
+            error
+        );
 
-                    showToast("Shift booked.");
-                } else {
-                    showToast(
-                        "Error: " + data.error
-                    );
+        showToast(
+            "Unable to connect to Google Sheet. " +
+            "Check the Apps Script URL."
+        );
 
-                    /*
-                     * Remove the booking we added locally
-                     * since it failed on the server.
-                     */
-                    events = events.filter(
-                        event => event.id !== newEvent.id
-                    );
+        isLoadingFromSheet = false;
 
-                    renderCalendar();
-                    updateBookingSummary();
-                }
-            })
-            .catch(error => {
-                console.error(
-                    "Failed to save booking:",
-                    error
-                );
-
-                showToast(
-                    "Unable to save to Google Sheet."
-                );
-
-                events = events.filter(
-                    event => event.id !== newEvent.id
-                );
-
-                renderCalendar();
-                updateBookingSummary();
-            });
-        }
+        /*
+         * Still render empty calendar so page doesn't break.
+         */
+        renderCalendar();
+        renderBookingTable();
+        updateBookingSummary();
+    });
+}
 
         function cancelShiftOnSheet(eventId) {
             fetch(APPS_SCRIPT_URL, {
