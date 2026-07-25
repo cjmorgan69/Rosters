@@ -1222,16 +1222,31 @@
         const ROSTER_START_HOUR = 8;
         const ROSTER_END_HOUR = 18;
 
-        const EVENTS_STORAGE_KEY =
-            "crew-roster-events-v3";
+       const EVENTS_STORAGE_KEY =
+    "crew-roster-events-v3";
 
-        const USER_STORAGE_KEY =
-            "crew-roster-user-v3";
+const USER_STORAGE_KEY =
+    "crew-roster-user-v3";
 
-        let currentUser =
-            localStorage.getItem(USER_STORAGE_KEY) || "";
+/*
+ * PASTE YOUR APPS SCRIPT DEPLOYMENT URL HERE
+ */
+const APPS_SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbz4CLRIHXsW4G2zzE4bUvH_b658g_4u9NU7sN8QmyGMQgXSmabjbzrLXPNkHA4lACQ/exec";
 
-        let events = loadEvents();
+/*
+ * Set this to your team name.
+ * Options: "North", "South", "East", "West"
+ */
+const TEAM_NAME = "Cummins";
+
+let currentUser =
+    localStorage.getItem(USER_STORAGE_KEY) || "";
+
+let events = [];
+let isLoadingFromSheet = false;
+
+initialise();
         let toastTimer;
 
         const nameInput =
